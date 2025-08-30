@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import Thumbnail from '../Thumbnail';
+import { Thumbnail } from '../Thumbnail';
+import { useDynamicMaxHeight } from '../../hooks/useDynamicMaxHeight';
 
 const ThumbnailList = ({
   thumbnails,
@@ -10,103 +11,81 @@ const ThumbnailList = ({
   onClickUntrack,
   activeDisplaySetInstanceUIDs = [],
   viewPreset,
+  ThumbnailMenuItems,
 }) => {
+  // Use the dynamic height hook on the parent container
+  const { ref, maxHeight } = useDynamicMaxHeight(thumbnails);
+
+  // Filter thumbnails into list items and thumbnail items
+  const listItems = thumbnails?.filter(
+    ({ componentType }) => componentType === 'thumbnailNoImage' || viewPreset === 'list'
+  );
+
+  const thumbnailItems = thumbnails?.filter(
+    ({ componentType }) => componentType !== 'thumbnailNoImage' && viewPreset === 'thumbnails'
+  );
+
   return (
-    <div
-      id="ohif-thumbnail-list"
-      className={`ohif-scrollbar bg-bkg-low grid place-items-center overflow-y-hidden pt-[4px] pr-[2.5px] pl-[2.5px] ${viewPreset === 'thumbnails' ? 'grid-cols-2 gap-[4px] pb-[12px]' : 'grid-cols-1 gap-[2px]'}`}
-    >
-      {thumbnails.map(
-        ({
-          displaySetInstanceUID,
-          description,
-          dragData,
-          seriesNumber,
-          numInstances,
-          loadingProgress,
-          modality,
-          componentType,
-          seriesDate,
-          countIcon,
-          isTracked,
-          canReject,
-          onReject,
-          imageSrc,
-          messages,
-          imageAltText,
-          isHydratedForDerivedDisplaySet,
-        }) => {
-          const isActive = activeDisplaySetInstanceUIDs.includes(displaySetInstanceUID);
-          switch (componentType) {
-            case 'thumbnail':
+    <div className="flex flex-col">
+      <div
+        ref={ref}
+        className="flex flex-col gap-[2px] pt-[4px] pr-[2.5px] pl-[5px] pb-[4px]"
+      >
+        {thumbnailItems.length > 0 && (
+          <div
+            id="ohif-thumbnail-list"
+            className="bg-bkg-low grid grid-cols-[repeat(auto-fit,_minmax(0,135px))] place-items-start gap-[4px]"
+          >
+            {thumbnailItems.map(item => {
+              const { displaySetInstanceUID, componentType, numInstances, ...rest } = item;
+
+              const isActive = activeDisplaySetInstanceUIDs.includes(displaySetInstanceUID);
               return (
                 <Thumbnail
                   key={displaySetInstanceUID}
+                  {...rest}
                   displaySetInstanceUID={displaySetInstanceUID}
-                  dragData={dragData}
-                  description={description}
-                  seriesNumber={seriesNumber}
                   numInstances={numInstances || 1}
-                  countIcon={countIcon}
-                  imageSrc={imageSrc}
-                  imageAltText={imageAltText}
-                  messages={messages}
                   isActive={isActive}
-                  onClick={() => onThumbnailClick(displaySetInstanceUID)}
-                  onDoubleClick={() => onThumbnailDoubleClick(displaySetInstanceUID)}
-                  viewPreset={viewPreset}
-                  modality={modality}
+                  thumbnailType={componentType}
+                  viewPreset="thumbnails"
+                  onClick={onThumbnailClick.bind(null, displaySetInstanceUID)}
+                  onDoubleClick={onThumbnailDoubleClick.bind(null, displaySetInstanceUID)}
+                  onClickUntrack={onClickUntrack.bind(null, displaySetInstanceUID)}
+                  ThumbnailMenuItems={ThumbnailMenuItems}
                 />
               );
-            case 'thumbnailTracked':
+            })}
+          </div>
+        )}
+        {/* List Items */}
+        {listItems.length > 0 && (
+          <div
+            id="ohif-thumbnail-list"
+            className="bg-bkg-low grid grid-cols-[repeat(auto-fit,_minmax(0,275px))] place-items-start gap-[2px]"
+          >
+            {listItems.map(item => {
+              const { displaySetInstanceUID, componentType, numInstances, ...rest } = item;
+              const isActive = activeDisplaySetInstanceUIDs.includes(displaySetInstanceUID);
               return (
                 <Thumbnail
                   key={displaySetInstanceUID}
+                  {...rest}
                   displaySetInstanceUID={displaySetInstanceUID}
-                  dragData={dragData}
-                  description={description}
-                  seriesNumber={seriesNumber}
-                  numInstances={numInstances}
-                  loadingProgress={loadingProgress}
-                  countIcon={countIcon}
-                  imageSrc={imageSrc}
-                  imageAltText={imageAltText}
-                  messages={messages}
-                  isTracked={isTracked}
-                  isActive={isActive}
-                  onClick={() => onThumbnailClick(displaySetInstanceUID)}
-                  onDoubleClick={() => onThumbnailDoubleClick(displaySetInstanceUID)}
-                  onClickUntrack={() => onClickUntrack(displaySetInstanceUID)}
-                  viewPreset={viewPreset}
-                  modality={modality}
-                />
-              );
-            case 'thumbnailNoImage':
-              return (
-                <Thumbnail
-                  isActive={isActive}
-                  key={displaySetInstanceUID}
-                  displaySetInstanceUID={displaySetInstanceUID}
-                  dragData={dragData}
-                  modality={modality}
-                  messages={messages}
-                  description={description}
-                  onClick={() => onThumbnailClick(displaySetInstanceUID)}
-                  onDoubleClick={() => onThumbnailDoubleClick(displaySetInstanceUID)}
-                  viewPreset={viewPreset}
-                  countIcon={countIcon}
-                  seriesNumber={seriesNumber}
                   numInstances={numInstances || 1}
-                  isHydratedForDerivedDisplaySet={isHydratedForDerivedDisplaySet}
-                  canReject={canReject}
-                  onReject={onReject}
+                  isActive={isActive}
+                  thumbnailType={componentType}
+                  viewPreset="list"
+                  onClick={onThumbnailClick.bind(null, displaySetInstanceUID)}
+                  onDoubleClick={onThumbnailDoubleClick.bind(null, displaySetInstanceUID)}
+                  onClickUntrack={onClickUntrack.bind(null, displaySetInstanceUID)}
+                  ThumbnailMenuItems={ThumbnailMenuItems}
                 />
               );
-            default:
-              return <></>;
-          }
-        }
-      )}
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -141,22 +120,7 @@ ThumbnailList.propTypes = {
   onThumbnailDoubleClick: PropTypes.func.isRequired,
   onClickUntrack: PropTypes.func.isRequired,
   viewPreset: PropTypes.string,
+  ThumbnailMenuItems: PropTypes.any,
 };
 
-// TODO: Support "Viewport Identificator"?
-function _getModalityTooltip(modality) {
-  if (_modalityTooltips.hasOwnProperty(modality)) {
-    return _modalityTooltips[modality];
-  }
-
-  return 'Unknown';
-}
-
-const _modalityTooltips = {
-  SR: 'Structured Report',
-  SEG: 'Segmentation',
-  OT: 'Other',
-  RTSTRUCT: 'RT Structure Set',
-};
-
-export default ThumbnailList;
+export { ThumbnailList };

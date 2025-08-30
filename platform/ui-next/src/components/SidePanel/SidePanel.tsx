@@ -1,39 +1,64 @@
 import classnames from 'classnames';
-import PropTypes from 'prop-types';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Icons } from '../Icons';
-import { TooltipTrigger, TooltipContent, TooltipProvider, Tooltip } from '../Tooltip';
-import Separator from '../Separator';
+import { TooltipTrigger, TooltipContent, Tooltip } from '../Tooltip';
+import { Separator } from '../Separator';
+
+/**
+ * SidePanel component properties.
+ * Note that the component monitors changes to the various widths and border sizes and will resize dynamically
+ * @property {boolean} isExpanded - boolean indicating if the side panel is expanded/open or collapsed
+ * @property {number} expandedWidth - the width of this side panel when expanded not including any borders or margins
+ * @property {number} collapsedWidth - the width of this side panel when collapsed not including any borders or margins
+ * @property {number} expandedInsideBorderSize - the width of the space between the expanded side panel content and viewport grid
+ * @property {number} collapsedInsideBorderSize - the width of the space between the collapsed side panel content and the viewport grid
+ * @property {number} collapsedOutsideBorderSize - the width of the space between the collapsed side panel content and the edge of the browser window
+ */
+type SidePanelProps = {
+  side: 'left' | 'right';
+  className: string;
+  activeTabIndex: number;
+  onOpen: () => void;
+  onClose: () => void;
+  onActiveTabIndexChange: () => void;
+  isExpanded: boolean;
+  expandedWidth: number;
+  collapsedWidth: number;
+  expandedInsideBorderSize: number;
+  collapsedInsideBorderSize: number;
+  collapsedOutsideBorderSize: number;
+  tabs: any;
+};
 
 type StyleMap = {
   open: {
-    left: { marginLeft: string };
-    right: { marginRight: string };
+    left: {
+      marginLeft: string; // the space between the expanded/open left side panel and the browser window left edge
+      marginRight: string; // the space between the expanded/open left side panel and the viewport grid
+    };
+    right: {
+      marginLeft: string; // the space between the expanded/open right side panel and the viewport grid
+      marginRight: string; // the space between the expanded/open right side panel and the browser window right edge
+    };
   };
   closed: {
-    left: { marginLeft: string };
-    right: { marginRight: string };
+    left: {
+      marginLeft: string; // the space between the collapsed/closed left panel and the browser window left edge
+      marginRight: string; // the space between the collapsed/closed left panel and the viewport grid
+      alignItems: 'flex-end'; // the flexbox layout align-items property
+    };
+    right: {
+      marginLeft: string; // the space between the collapsed/closed right panel and the viewport grid
+      marginRight: string; // the space between the collapsed/closed right panel and the browser window right edge
+      alignItems: 'flex-start'; // the flexbox layout align-items property
+    };
   };
 };
-const borderSize = 4;
-const collapsedWidth = 25;
 const closeIconWidth = 30;
 const gridHorizontalPadding = 10;
 const tabSpacerWidth = 2;
 
-const baseClasses =
-  'transition-all duration-300 ease-in-out bg-black border-black justify-start box-content flex flex-col';
-
-const classesMap = {
-  open: {
-    left: `mr-1`,
-    right: `ml-1`,
-  },
-  closed: {
-    left: `mr-2 items-end`,
-    right: `ml-2 items-start`,
-  },
-};
+const baseClasses = 'bg-black border-black justify-start box-content flex flex-col';
 
 const openStateIconName = {
   left: 'SidePanelCloseLeft',
@@ -87,7 +112,7 @@ const getTabClassNames = (
   isTabDisabled: boolean
 ) =>
   classnames('h-[28px] mb-[2px] cursor-pointer text-white bg-black', {
-    'hover:text-primary-active': !isActiveTab && !isTabDisabled,
+    'hover:text-primary': !isActiveTab && !isTabDisabled,
     'rounded-l': tabIndex % numColumns === 0,
     'rounded-r': (tabIndex + 1) % numColumns === 0 || tabIndex === numTabs - 1,
   });
@@ -106,19 +131,29 @@ const getTabIconClassNames = (numTabs: number, isActiveTab: boolean) => {
 };
 const createStyleMap = (
   expandedWidth: number,
-  borderSize: number,
-  collapsedWidth: number
+  expandedInsideBorderSize: number,
+  collapsedWidth: number,
+  collapsedInsideBorderSize: number,
+  collapsedOutsideBorderSize: number
 ): StyleMap => {
-  const collapsedHideWidth = expandedWidth - collapsedWidth - borderSize;
+  const collapsedHideWidth = expandedWidth - collapsedWidth - collapsedOutsideBorderSize;
 
   return {
     open: {
-      left: { marginLeft: '0px' },
-      right: { marginRight: '0px' },
+      left: { marginLeft: '0px', marginRight: `${expandedInsideBorderSize}px` },
+      right: { marginLeft: `${expandedInsideBorderSize}px`, marginRight: '0px' },
     },
     closed: {
-      left: { marginLeft: `-${collapsedHideWidth}px` },
-      right: { marginRight: `-${collapsedHideWidth}px` },
+      left: {
+        marginLeft: `-${collapsedHideWidth}px`,
+        marginRight: `${collapsedInsideBorderSize}px`,
+        alignItems: `flex-end`,
+      },
+      right: {
+        marginLeft: `${collapsedInsideBorderSize}px`,
+        marginRight: `-${collapsedHideWidth}px`,
+        alignItems: `flex-start`,
+      },
     },
   };
 };
@@ -143,45 +178,67 @@ const createBaseStyle = (expandedWidth: number) => {
     height: '99.8%',
   };
 };
+
 const SidePanel = ({
   side,
   className,
-  activeTabIndex: activeTabIndexProp = null,
+  activeTabIndex: activeTabIndexProp,
+  isExpanded,
   tabs,
   onOpen,
-  expandedWidth = 280,
+  onClose,
   onActiveTabIndexChange,
-}) => {
-  const [panelOpen, setPanelOpen] = useState(activeTabIndexProp !== null);
-  const [renderHeader, setRenderHeader] = useState(false);
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  expandedWidth = 280,
+  collapsedWidth = 25,
+  expandedInsideBorderSize = 4,
+  collapsedInsideBorderSize = 8,
+  collapsedOutsideBorderSize = 4,
+}: SidePanelProps) => {
+  const [panelOpen, setPanelOpen] = useState(isExpanded);
+  const [activeTabIndex, setActiveTabIndex] = useState(activeTabIndexProp ?? 0);
 
-  const styleMap = createStyleMap(expandedWidth, borderSize, collapsedWidth);
-  const baseStyle = createBaseStyle(expandedWidth);
-  const gridAvailableWidth = expandedWidth - closeIconWidth - gridHorizontalPadding;
-  const gridWidth = getGridWidth(tabs.length, gridAvailableWidth);
+  const [styleMap, setStyleMap] = useState(
+    createStyleMap(
+      expandedWidth,
+      expandedInsideBorderSize,
+      collapsedWidth,
+      collapsedInsideBorderSize,
+      collapsedOutsideBorderSize
+    )
+  );
+
+  const [baseStyle, setBaseStyle] = useState(createBaseStyle(expandedWidth));
+
+  const [gridAvailableWidth, setGridAvailableWidth] = useState(
+    expandedWidth - closeIconWidth - gridHorizontalPadding
+  );
+
+  const [gridWidth, setGridWidth] = useState(getGridWidth(tabs.length, gridAvailableWidth));
   const openStatus = panelOpen ? 'open' : 'closed';
   const style = Object.assign({}, styleMap[openStatus][side], baseStyle);
 
   const updatePanelOpen = useCallback(
-    (panelOpen: boolean) => {
-      setPanelOpen(panelOpen);
-      if (panelOpen && onOpen) {
-        onOpen();
+    (isOpen: boolean) => {
+      setPanelOpen(isOpen);
+      if (isOpen !== panelOpen) {
+        // only fire events for changes
+        if (isOpen && onOpen) {
+          onOpen();
+        } else if (onClose && !isOpen) {
+          onClose();
+        }
       }
     },
-    [onOpen]
+    [panelOpen, onOpen, onClose]
   );
 
   const updateActiveTabIndex = useCallback(
-    (activeTabIndex: number) => {
-      if (activeTabIndex === null) {
-        updatePanelOpen(false);
-        return;
+    (activeTabIndex: number, forceOpen: boolean = false) => {
+      if (forceOpen) {
+        updatePanelOpen(true);
       }
 
       setActiveTabIndex(activeTabIndex);
-      updatePanelOpen(true);
 
       if (onActiveTabIndexChange) {
         onActiveTabIndexChange({ activeTabIndex });
@@ -191,10 +248,35 @@ const SidePanel = ({
   );
 
   useEffect(() => {
-    setRenderHeader(tabs.length === 1);
-  }, [tabs]);
+    updatePanelOpen(isExpanded);
+  }, [isExpanded, updatePanelOpen]);
+
   useEffect(() => {
-    updateActiveTabIndex(activeTabIndexProp);
+    setStyleMap(
+      createStyleMap(
+        expandedWidth,
+        expandedInsideBorderSize,
+        collapsedWidth,
+        collapsedInsideBorderSize,
+        collapsedOutsideBorderSize
+      )
+    );
+    setBaseStyle(createBaseStyle(expandedWidth));
+
+    const gridAvailableWidth = expandedWidth - closeIconWidth - gridHorizontalPadding;
+    setGridAvailableWidth(gridAvailableWidth);
+    setGridWidth(getGridWidth(tabs.length, gridAvailableWidth));
+  }, [
+    collapsedInsideBorderSize,
+    collapsedWidth,
+    expandedWidth,
+    expandedInsideBorderSize,
+    tabs.length,
+    collapsedOutsideBorderSize,
+  ]);
+
+  useEffect(() => {
+    updateActiveTabIndex(activeTabIndexProp ?? 0);
   }, [activeTabIndexProp, updateActiveTabIndex]);
 
   const getCloseStateComponent = () => {
@@ -212,47 +294,45 @@ const SidePanel = ({
           data-cy={`side-panel-header-${side}`}
         >
           <Icons.NavigationPanelReveal
-            className={classnames('text-primary-active', side === 'left' && 'rotate-180 transform')}
+            className={classnames('text-primary', side === 'left' && 'rotate-180 transform')}
           />
         </div>
         <div className={classnames('mt-3 flex flex-col space-y-3')}>
-          <TooltipProvider>
-            {_childComponents.map((childComponent, index) => (
-              <Tooltip key={index}>
-                <TooltipTrigger>
-                  <div
-                    id={`${childComponent.name}-btn`}
-                    data-cy={`${childComponent.name}-btn`}
-                    className="text-primary-active hover:cursor-pointer"
-                    onClick={() => {
-                      return childComponent.disabled ? null : updateActiveTabIndex(index);
-                    }}
-                  >
-                    {React.createElement(Icons[childComponent.iconName] || Icons.MissingIcon, {
-                      className: classnames({
-                        'text-primary-active': true,
-                        'ohif-disabled': childComponent.disabled,
-                      }),
-                      style: {
-                        width: '22px',
-                        height: '22px',
-                      },
-                    })}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side={side === 'left' ? 'right' : 'left'}>
-                  <div
-                    className={classnames(
-                      'flex items-center',
-                      side === 'left' ? 'justify-end' : 'justify-start'
-                    )}
-                  >
-                    {getToolTipContent(childComponent.label, childComponent.disabled)}
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </TooltipProvider>
+          {_childComponents.map((childComponent, index) => (
+            <Tooltip key={index}>
+              <TooltipTrigger>
+                <div
+                  id={`${childComponent.name}-btn`}
+                  data-cy={`${childComponent.name}-btn`}
+                  className="text-primary hover:cursor-pointer"
+                  onClick={() => {
+                    return childComponent.disabled ? null : updateActiveTabIndex(index, true);
+                  }}
+                >
+                  {React.createElement(Icons[childComponent.iconName] || Icons.MissingIcon, {
+                    className: classnames({
+                      'text-primary': true,
+                      'ohif-disabled': childComponent.disabled,
+                    }),
+                    style: {
+                      width: '22px',
+                      height: '22px',
+                    },
+                  })}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side={side === 'left' ? 'right' : 'left'}>
+                <div
+                  className={classnames(
+                    'flex items-center',
+                    side === 'left' ? 'justify-end' : 'justify-start'
+                  )}
+                >
+                  {getToolTipContent(childComponent.label, childComponent.disabled)}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          ))}
         </div>
       </>
     );
@@ -262,7 +342,7 @@ const SidePanel = ({
     return (
       <div
         className={classnames(
-          'absolute flex h-[24px] cursor-pointer items-center justify-center',
+          'absolute flex cursor-pointer items-center justify-center',
           side === 'left' ? 'right-0' : 'left-0'
         )}
         style={{ width: `${closeIconWidth}px` }}
@@ -272,7 +352,7 @@ const SidePanel = ({
         data-cy={`side-panel-header-${side}`}
       >
         {React.createElement(Icons[openStateIconName[side]] || Icons.MissingIcon, {
-          className: 'text-primary-active',
+          className: 'text-primary',
         })}
       </div>
     );
@@ -284,9 +364,8 @@ const SidePanel = ({
     return (
       <>
         {getCloseIcon()}
-
         <div className={classnames('flex grow justify-center')}>
-          <div className={classnames('bg-primary-dark text-primary-active flex flex-wrap')}>
+          <div className={classnames('bg-primary-dark text-primary flex flex-wrap')}>
             {tabs.map((tab, tabIndex) => {
               const { disabled } = tab;
               return (
@@ -301,47 +380,42 @@ const SidePanel = ({
                       <div className="bg-primary-dark h-[20px] w-full"></div>
                     </div>
                   )}
-                  <TooltipProvider>
-                    <Tooltip key={tabIndex}>
-                      <TooltipTrigger>
+                  <Tooltip key={tabIndex}>
+                    <TooltipTrigger>
+                      <div
+                        className={getTabClassNames(
+                          numCols,
+                          tabs.length,
+                          tabIndex,
+                          tabIndex === activeTabIndex,
+                          disabled
+                        )}
+                        style={getTabStyle(tabs.length)}
+                        onClick={() => {
+                          return disabled ? null : updateActiveTabIndex(tabIndex);
+                        }}
+                        data-cy={`${tab.name}-btn`}
+                      >
                         <div
-                          className={getTabClassNames(
-                            numCols,
-                            tabs.length,
-                            tabIndex,
-                            tabIndex === activeTabIndex,
-                            disabled
-                          )}
-                          style={getTabStyle(tabs.length)}
-                          onClick={() => {
-                            return disabled ? null : updateActiveTabIndex(tabIndex);
-                          }}
-                          data-cy={`${tab.name}-btn`}
+                          className={getTabIconClassNames(tabs.length, tabIndex === activeTabIndex)}
                         >
-                          <div
-                            className={getTabIconClassNames(
-                              tabs.length,
-                              tabIndex === activeTabIndex
-                            )}
-                          >
-                            {React.createElement(Icons[tab.iconName] || Icons.MissingIcon, {
-                              className: classnames({
-                                'text-primary-active': true,
-                                'ohif-disabled': disabled,
-                              }),
-                              style: {
-                                width: '22px',
-                                height: '22px',
-                              },
-                            })}
-                          </div>
+                          {React.createElement(Icons[tab.iconName] || Icons.MissingIcon, {
+                            className: classnames({
+                              'text-primary': true,
+                              'ohif-disabled': disabled,
+                            }),
+                            style: {
+                              width: '22px',
+                              height: '22px',
+                            },
+                          })}
                         </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        {getToolTipContent(tab.label, disabled)}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      {getToolTipContent(tab.label, disabled)}
+                    </TooltipContent>
+                  </Tooltip>
                 </React.Fragment>
               );
             })}
@@ -351,15 +425,26 @@ const SidePanel = ({
     );
   };
 
-  const getOpenStateComponent = () => {
-    if (tabs.length === 1) {
-      return null;
-    }
+  const getOneTabComponent = () => {
+    return (
+      <div
+        className={classnames(
+          'text-primary flex grow cursor-pointer select-none justify-center self-center text-[13px]'
+        )}
+        data-cy={`${tabs[0].name}-btn`}
+        onClick={() => updatePanelOpen(!panelOpen)}
+      >
+        {getCloseIcon()}
+        <span>{tabs[0].label}</span>
+      </div>
+    );
+  };
 
+  const getOpenStateComponent = () => {
     return (
       <>
-        <div className="bg-bkg-med flex h-[40px] select-none rounded-t p-2">
-          {getTabGridComponent()}
+        <div className="bg-bkg-med flex h-[40px] flex-shrink-0 select-none rounded-t p-2">
+          {tabs.length === 1 ? getOneTabComponent() : getTabGridComponent()}
         </div>
         <Separator
           orientation="horizontal"
@@ -372,7 +457,7 @@ const SidePanel = ({
 
   return (
     <div
-      className={classnames(className, baseClasses, classesMap[openStatus][side])}
+      className={classnames(className, baseClasses)}
       style={style}
     >
       {panelOpen ? (
@@ -380,14 +465,7 @@ const SidePanel = ({
           {getOpenStateComponent()}
           {tabs.map((tab, tabIndex) => {
             if (tabIndex === activeTabIndex) {
-              return (
-                <tab.content
-                  key={tabIndex}
-                  getCloseIcon={getCloseIcon}
-                  tab={tab}
-                  renderHeader={renderHeader}
-                />
-              );
+              return <tab.content key={tabIndex} />;
             }
             return null;
           })}
@@ -399,24 +477,4 @@ const SidePanel = ({
   );
 };
 
-SidePanel.propTypes = {
-  side: PropTypes.oneOf(['left', 'right']).isRequired,
-  className: PropTypes.string,
-  activeTabIndex: PropTypes.number,
-  tabs: PropTypes.oneOfType([
-    PropTypes.arrayOf(
-      PropTypes.shape({
-        iconName: PropTypes.string.isRequired,
-        iconLabel: PropTypes.string.isRequired,
-        name: PropTypes.string.isRequired,
-        label: PropTypes.string.isRequired,
-        content: PropTypes.func, // TODO: Should be node, but it keeps complaining?
-      })
-    ),
-  ]),
-  onOpen: PropTypes.func,
-  onActiveTabIndexChange: PropTypes.func,
-  expandedWidth: PropTypes.number,
-};
-
-export default SidePanel;
+export { SidePanel };

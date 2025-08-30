@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+@import './assets/fonts.css';
 
 @tailwind base;
 @tailwind components;
@@ -9,16 +9,19 @@
 @layer base {
   :root {
     --highlight: 191 74% 63%;
+    --neutral: 213 22% 59%;
+    --neutral-light: 214 69% 81%;
+    --neutral-dark: 214 16% 21%;
     --background: 236 62% 5%;
     --foreground: 0 0% 98%;
-    --card: 236 62% 5%;
+    --card: 234 64% 10%;
     --card-foreground: 0 0% 98%;
     --popover: 219 90% 15%;
     --popover-foreground: 0 0% 98%;
     --primary: 214 98% 60%;
     --primary-foreground: 0 0% 98%;
     --secondary: 214 66% 48%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary-foreground: 200 50% 84%;
     --muted: 234 64% 10%;
     --muted-foreground: 200 46% 65%;
     --accent: 217 79% 24%;
@@ -26,7 +29,7 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 14.9%;
-    --input: 236 45% 21%;
+    --input: 236 52% 30%;
     --ring: 214 98% 60%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -34,12 +37,27 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --radius: 0.5rem;
+    --success-bg: hsl(143, 85%, 96%);
+    --success-border: hsl(145, 92%, 91%);
+    --success-text: hsl(140, 100%, 27%);
+
+    --info-bg: hsl(208, 100%, 97%);
+    --info-border: hsl(221, 91%, 91%);
+    --info-text: hsl(210, 92%, 45%);
+
+    --warning-bg: hsl(49, 100%, 97%);
+    --warning-border: hsl(49, 91%, 91%);
+    --warning-text: hsl(31, 92%, 45%);
+
+    --error-bg: hsl(359, 100%, 97%);
+    --error-border: hsl(359, 100%, 94%);
+    --error-text: hsl(360, 100%, 45%);
   }
 
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 234 64% 10%;
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
@@ -54,7 +72,7 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 14.9%;
-    --input: 236 45% 21%;
+    --input: 236 52% 30%;
     --ring: 214 98% 60%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -146,7 +164,7 @@
     --muted-foreground: 220 8.9% 46.1%;
     --accent: 220 14.3% 95.9%;
     --accent-foreground: 220.9 39.3% 11%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 360 84.2% 60.2%;
     --destructive-foreground: 210 20% 98%;
     --border: 220 13% 91%;
     --input: 220 13% 91%;
@@ -174,7 +192,7 @@
     --muted-foreground: 217.9 10.6% 64.9%;
     --accent: 215 27.9% 16.9%;
     --accent-foreground: 210 20% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 360 84.2% 60.2%;
     --destructive-foreground: 210 20% 98%;
     --border: 215 27.9% 16.9%;
     --input: 215 27.9% 16.9%;
@@ -197,7 +215,7 @@
   }
 
   body {
-    @apply bg-black;
+    @apply !bg-black;
   }
 }
 
@@ -227,4 +245,14 @@ h3.section-header {
 
 .TooltipContent[data-side='bottom'] {
   animation-name: slideDown;
+}
+
+/* Custom CSS to hide default number input arrows */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  @apply appearance-none;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield; /* For Firefox */
 }

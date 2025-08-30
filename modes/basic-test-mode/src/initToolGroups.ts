@@ -29,9 +29,12 @@ function initDefaultToolGroup(extensionManager, toolGroupService, commandsManage
       },
       {
         toolName: toolNames.Zoom,
-        bindings: [{ mouseButton: Enums.MouseBindings.Secondary }],
+        bindings: [{ mouseButton: Enums.MouseBindings.Secondary }, { numTouchPoints: 2 }],
       },
-      { toolName: toolNames.StackScrollMouseWheel, bindings: [] },
+      {
+        toolName: toolNames.StackScroll,
+        bindings: [{ mouseButton: Enums.MouseBindings.Wheel }, { numTouchPoints: 3 }],
+      },
     ],
     passive: [
       { toolName: toolNames.Length },
@@ -62,7 +65,6 @@ function initDefaultToolGroup(extensionManager, toolGroupService, commandsManage
       { toolName: toolNames.Angle },
       { toolName: toolNames.CobbAngle },
       { toolName: toolNames.Magnify },
-      { toolName: toolNames.SegmentationDisplay },
       { toolName: toolNames.WindowLevelRegion },
       { toolName: toolNames.UltrasoundDirectional },
       { toolName: toolNames.PlanarFreehandROI },
@@ -113,11 +115,12 @@ function initSRToolGroup(extensionManager, toolGroupService, commandsManager) {
           {
             mouseButton: Enums.MouseBindings.Secondary,
           },
+          { numTouchPoints: 2 },
         ],
       },
       {
-        toolName: toolNames.StackScrollMouseWheel,
-        bindings: [],
+        toolName: toolNames.StackScroll,
+        bindings: [{ mouseButton: Enums.MouseBindings.Wheel }, { numTouchPoints: 3 }],
       },
     ],
     passive: [
@@ -163,9 +166,12 @@ function initMPRToolGroup(extensionManager, toolGroupService, commandsManager) {
       },
       {
         toolName: toolNames.Zoom,
-        bindings: [{ mouseButton: Enums.MouseBindings.Secondary }],
+        bindings: [{ mouseButton: Enums.MouseBindings.Secondary }, { numTouchPoints: 2 }],
       },
-      { toolName: toolNames.StackScrollMouseWheel, bindings: [] },
+      {
+        toolName: toolNames.StackScroll,
+        bindings: [{ mouseButton: Enums.MouseBindings.Wheel }, { numTouchPoints: 3 }],
+      },
     ],
     passive: [
       { toolName: toolNames.Length },
@@ -194,10 +200,10 @@ function initMPRToolGroup(extensionManager, toolGroupService, commandsManager) {
       { toolName: toolNames.RectangleROI },
       { toolName: toolNames.StackScroll },
       { toolName: toolNames.Angle },
-      { toolName: toolNames.SegmentationDisplay },
       { toolName: toolNames.WindowLevelRegion },
       { toolName: toolNames.PlanarFreehandROI },
       { toolName: toolNames.SplineROI },
+      { toolName: toolNames.LivewireContour },
     ],
     disabled: [
       {
@@ -249,11 +255,11 @@ function initVolume3DToolGroup(extensionManager, toolGroupService) {
       },
       {
         toolName: toolNames.Zoom,
-        bindings: [{ mouseButton: Enums.MouseBindings.Secondary }],
+        bindings: [{ mouseButton: Enums.MouseBindings.Secondary }, { numTouchPoints: 2 }],
       },
       {
         toolName: toolNames.Pan,
-        bindings: [{ mouseButton: Enums.MouseBindings.Auxiliary }],
+        bindings: [{ mouseButton: Enums.MouseBindings.Auxiliary }, { numTouchPoints: 3 }],
       },
     ],
   };

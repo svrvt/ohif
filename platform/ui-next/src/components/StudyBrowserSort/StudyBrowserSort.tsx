@@ -1,16 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { Icons } from '../Icons';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '../DropdownMenu/DropdownMenu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../Tooltip';
 
-export default function StudyBrowserSort({ servicesManager }: withAppTypes) {
+export function StudyBrowserSort({ servicesManager }: withAppTypes) {
+  // Todo: this should not be here, no servicesManager should be in ui-next, only
+  // customization service
   const { customizationService, displaySetService } = servicesManager.services;
-  const { values: sortFunctions } = customizationService.get('studyBrowser.sortFunctions');
+  const sortFunctions = customizationService.getCustomization('studyBrowser.sortFunctions');
 
   const [selectedSort, setSelectedSort] = useState(sortFunctions[0]);
   const [sortDirection, setSortDirection] = useState('ascending');
 
-  const handleSortChange = event => {
-    const selectedSortFunction = sortFunctions.find(sort => sort.label === event.target.value);
-    setSelectedSort(selectedSortFunction);
+  const handleSortChange = sortFunction => {
+    setSelectedSort(sortFunction);
   };
 
   const toggleSortDirection = e => {
@@ -43,33 +51,43 @@ export default function StudyBrowserSort({ servicesManager }: withAppTypes) {
   }, [displaySetService, selectedSort, sortDirection]);
 
   return (
-    <div className="border-inputfield-main focus:border-inputfield-main flex h-[26px] w-[125px] items-center justify-center rounded border bg-black p-2">
-      <select
-        onChange={handleSortChange}
-        value={selectedSort.label}
-        onClick={e => e.stopPropagation()}
-        className="w-full appearance-none bg-transparent text-sm leading-tight text-white shadow transition duration-300 focus:outline-none"
-      >
-        {sortFunctions.map(sort => (
-          <option
-            className="appearance-none bg-black text-white"
-            value={sort.label}
-            key={sort.label}
+    <div className="flex w-[50%] items-center gap-1">
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger className="w-full overflow-hidden">
+            <DropdownMenuTrigger className="border-inputfield-main focus:border-inputfield-main flex h-[26px] w-full items-center justify-start overflow-hidden whitespace-nowrap rounded border bg-black p-2 text-base text-white">
+              {selectedSort.label}
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>{selectedSort.label}</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent className="bg-black">
+          {sortFunctions.map(sort => (
+            <DropdownMenuItem
+              key={sort.label}
+              className="text-white"
+              onClick={() => handleSortChange(sort)}
+            >
+              {sort.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger>
+          <button
+            onClick={toggleSortDirection}
+            className="flex h-[26px] items-center justify-center bg-black"
           >
-            {sort.label}
-          </option>
-        ))}
-      </select>
-      <button
-        onClick={toggleSortDirection}
-        className="flex items-center justify-center"
-      >
-        {sortDirection === 'ascending' ? (
-          <Icons.SortingAscending className="text-primary-main w-2" />
-        ) : (
-          <Icons.SortingDescending className="text-primary-main w-2" />
-        )}
-      </button>
+            {sortDirection === 'ascending' ? (
+              <Icons.SortingAscending className="text-primary-main w-2" />
+            ) : (
+              <Icons.SortingDescending className="text-primary-main w-2" />
+            )}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Sort direction</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

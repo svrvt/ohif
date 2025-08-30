@@ -1,9 +1,7 @@
-import { hotkeys } from '@ohif/core';
 import i18n from 'i18next';
 import { id } from './id';
 import initToolGroups from './initToolGroups';
 import toolbarButtons from './toolbarButtons';
-import moreTools from './moreTools';
 
 // Allow this mode by excluding non-imaging modalities such as SR, SEG
 // Also, SM is not a simple imaging modalities, so exclude it.
@@ -15,7 +13,11 @@ const ohif = {
   thumbnailList: '@ohif/extension-default.panelModule.seriesList',
   wsiSopClassHandler:
     '@ohif/extension-cornerstone.sopClassHandlerModule.DicomMicroscopySopClassHandler',
-  measurements: '@ohif/extension-default.panelModule.measurements',
+};
+
+const cornerstone = {
+  measurements: '@ohif/extension-cornerstone.panelModule.panelMeasurement',
+  segmentation: '@ohif/extension-cornerstone.panelModule.panelSegmentation',
 };
 
 const tracked = {
@@ -26,6 +28,7 @@ const tracked = {
 
 const dicomsr = {
   sopClassHandler: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr',
+  sopClassHandler3D: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr-3d',
   viewport: '@ohif/extension-cornerstone-dicom-sr.viewportModule.dicom-sr',
 };
 
@@ -42,7 +45,6 @@ const dicompdf = {
 const dicomSeg = {
   sopClassHandler: '@ohif/extension-cornerstone-dicom-seg.sopClassHandlerModule.dicom-seg',
   viewport: '@ohif/extension-cornerstone-dicom-seg.viewportModule.dicom-seg',
-  panel: '@ohif/extension-cornerstone-dicom-seg.panelModule.panelSegmentation',
 };
 
 const dicomPmap = {
@@ -85,25 +87,11 @@ function modeFactory({ modeConfiguration }) {
 
       measurementService.clearMeasurements();
 
-      // customizationService.addModeCustomizations([
-      //   {
-      //     id: 'measurementLabels',
-      //     labelOnMeasure: true,
-      //     exclusive: true,
-      //     items: [
-      //       { value: 'Head', label: 'Head' },
-      //       { value: 'Shoulder', label: 'Shoulder' },
-      //       { value: 'Knee', label: 'Knee' },
-      //       { value: 'Toe', label: 'Toe' },
-      //     ],
-      //   },
-      // ]);
-
       // Init Default and SR ToolGroups
-      initToolGroups(extensionManager, toolGroupService, commandsManager, this.labelConfig);
+      initToolGroups(extensionManager, toolGroupService, commandsManager);
 
-      toolbarService.addButtons([...toolbarButtons, ...moreTools]);
-      toolbarService.createButtonSection('primary', [
+      toolbarService.register(toolbarButtons);
+      toolbarService.updateSection(toolbarService.sections.primary, [
         'MeasurementTools',
         'Zoom',
         'Pan',
@@ -115,33 +103,100 @@ function modeFactory({ modeConfiguration }) {
         'MoreTools',
       ]);
 
-      customizationService.addModeCustomizations([
-        {
-          id: 'segmentation.panel',
-          disableEditing: true,
-        },
+      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.topLeft, [
+        'orientationMenu',
+        'dataOverlayMenu',
       ]);
+
+      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.bottomMiddle, [
+        'AdvancedRenderingControls',
+      ]);
+
+      toolbarService.updateSection('AdvancedRenderingControls', [
+        'windowLevelMenuEmbedded',
+        'voiManualControlMenu',
+        'Colorbar',
+        'opacityMenu',
+        'thresholdMenu',
+      ]);
+
+      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.topRight, [
+        'modalityLoadBadge',
+        'trackingStatus',
+        'navigationComponent',
+      ]);
+
+      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.bottomLeft, [
+        'windowLevelMenu',
+      ]);
+
+      toolbarService.updateSection('MeasurementTools', [
+        'Length',
+        'Bidirectional',
+        'ArrowAnnotate',
+        'EllipticalROI',
+        'RectangleROI',
+        'CircleROI',
+        'PlanarFreehandROI',
+        'SplineROI',
+        'LivewireContour',
+      ]);
+
+      toolbarService.updateSection('MoreTools', [
+        'Reset',
+        'rotate-right',
+        'flipHorizontal',
+        'ImageSliceSync',
+        'ReferenceLines',
+        'ImageOverlayViewer',
+        'StackScroll',
+        'invert',
+        'Probe',
+        'Cine',
+        'Angle',
+        'CobbAngle',
+        'Magnify',
+        'CalibrationLine',
+        'TagBrowser',
+        'AdvancedMagnify',
+        'UltrasoundDirectionalTool',
+        'WindowLevelRegion',
+        'SegmentLabelTool',
+      ]);
+
+      customizationService.setCustomizations({
+        'panelSegmentation.disableEditing': {
+          $set: true,
+        },
+      });
 
       // // ActivatePanel event trigger for when a segmentation or measurement is added.
       // // Do not force activation so as to respect the state the user may have left the UI in.
       // _activatePanelTriggersSubscriptions = [
-      //   ...panelService.addActivatePanelTriggers(dicomSeg.panel, [
-      //     {
-      //       sourcePubSubService: segmentationService,
-      //       sourceEvents: [
-      //         segmentationService.EVENTS.SEGMENTATION_PIXEL_DATA_CREATED,
-      //       ],
-      //     },
-      //   ]),
-      //   ...panelService.addActivatePanelTriggers(tracked.measurements, [
-      //     {
-      //       sourcePubSubService: measurementService,
-      //       sourceEvents: [
-      //         measurementService.EVENTS.MEASUREMENT_ADDED,
-      //         measurementService.EVENTS.RAW_MEASUREMENT_ADDED,
-      //       ],
-      //     },
-      //   ]),
+      //   ...panelService.addActivatePanelTriggers(
+      //     cornerstone.segmentation,
+      //     [
+      //       {
+      //         sourcePubSubService: segmentationService,
+      //         sourceEvents: [segmentationService.EVENTS.SEGMENTATION_ADDED],
+      //       },
+      //     ],
+      //     true
+      //   ),
+      //   ...panelService.addActivatePanelTriggers(
+      //     tracked.measurements,
+      //     [
+      //       {
+      //         sourcePubSubService: measurementService,
+      //         sourceEvents: [
+      //           measurementService.EVENTS.MEASUREMENT_ADDED,
+      //           measurementService.EVENTS.RAW_MEASUREMENT_ADDED,
+      //         ],
+      //       },
+      //     ],
+      //     true
+      //   ),
+      //   true,
       // ];
     },
     onModeExit: ({ servicesManager }: withAppTypes) => {
@@ -157,7 +212,7 @@ function modeFactory({ modeConfiguration }) {
       _activatePanelTriggersSubscriptions.forEach(sub => sub.unsubscribe());
       _activatePanelTriggersSubscriptions = [];
 
-      uiDialogService.dismissAll();
+      uiDialogService.hideAll();
       uiModalService.hide();
       toolGroupService.destroy();
       syncGroupService.destroy();
@@ -191,8 +246,10 @@ function modeFactory({ modeConfiguration }) {
             id: ohif.layout,
             props: {
               leftPanels: [tracked.thumbnailList],
-              rightPanels: [dicomSeg.panel, tracked.measurements],
+              leftPanelResizable: true,
+              rightPanels: [cornerstone.segmentation, tracked.measurements],
               rightPanelClosed: true,
+              rightPanelResizable: true,
               viewports: [
                 {
                   namespace: tracked.viewport,
@@ -204,12 +261,8 @@ function modeFactory({ modeConfiguration }) {
                 },
                 {
                   namespace: dicomsr.viewport,
-                  displaySetsToDisplay: [dicomsr.sopClassHandler],
+                  displaySetsToDisplay: [dicomsr.sopClassHandler, dicomsr.sopClassHandler3D],
                 },
-                // {
-                //   namespace: dicomvideo.viewport,
-                //   displaySetsToDisplay: [dicomvideo.sopClassHandler],
-                // },
                 {
                   namespace: dicompdf.viewport,
                   displaySetsToDisplay: [dicompdf.sopClassHandler],
@@ -246,10 +299,10 @@ function modeFactory({ modeConfiguration }) {
       ohif.sopClassHandler,
       ohif.wsiSopClassHandler,
       dicompdf.sopClassHandler,
+      dicomsr.sopClassHandler3D,
       dicomsr.sopClassHandler,
       dicomRT.sopClassHandler,
     ],
-    hotkeys: [...hotkeys.defaults.hotkeyBindings],
     ...modeConfiguration,
   };
 }
@@ -261,4 +314,4 @@ const mode = {
 };
 
 export default mode;
-export { initToolGroups, moreTools, toolbarButtons };
+export { initToolGroups, toolbarButtons };
